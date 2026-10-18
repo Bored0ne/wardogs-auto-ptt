@@ -1,0 +1,80 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows .exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --clean --noconfirm wardogs_voice_ptt.spec
+
+      - name: Smoke-test the binary
+        shell: bash
+        run: |
+          set +e
+          ./dist/wardogs_voice_ptt.exe --list-devices --no-color
+          rc=$?
+          echo "list-devices exit code: $rc"
+          exit 0
+
+      - name: Verify artifact exists
+        shell: bash
+        run: |
+          ls -la dist/
+          test -f dist/wardogs_voice_ptt.exe
+
+      - name: Stage release bundle
+        shell: bash
+        run: |
+          mkdir -p release_bundle
+          cp dist/wardogs_voice_ptt.exe release_bundle/
+          cp ReadMe.md release_bundle/
+          ls -la release_bundle/
+
+      - name: Zip release bundle
+        shell: pwsh
+        run: |
+          Compress-Archive -Path release_bundle/* -DestinationPath wardogs-auto-ptt-windows.zip -Force
+
+      - name: Upload artifact (workflow run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: wardogs-auto-ptt-windows
+          path: dist/wardogs_voice_ptt.exe
+
+      - name: Create/update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            wardogs-auto-ptt-windows.zip
+            dist/wardogs_voice_ptt.exe
+          fail_on_unmatched_files: true

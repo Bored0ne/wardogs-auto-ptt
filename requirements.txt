@@ -1,0 +1,4 @@
+sounddevice
+pynput
+numpy
+textual
