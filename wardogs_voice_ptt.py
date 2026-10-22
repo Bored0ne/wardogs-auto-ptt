@@ -80,23 +80,11 @@ METER_INTERVAL_S = 0.1
 # physical mic and only keep ONE device per mic, preferring the modern WASAPI
 # host API.  DEDUPE_INPUTS False -> show every index (no filtering at all).
 #
-# INPUT_ALLOWLIST is a physical-mic allowlist by normalized name (see
-# --list-devices output, which prints the normalized key for every device).
-# When non-empty, ONLY those mics are offered (one WASAPI entry each), which
-# also hides Windows Sound Mapper / loopback / wave-out pseudo-inputs. Set
-# INPUT_ALLOWLIST = [] to disable and rely on dedupe alone.
-#
 # While a device is running, Windows may hold it open and hide it from a
-# rescan. If a mic you expect is missing in the picker, use F10 to rescan
-# (it falls back to the allowlist below), or start without other apps using
-# the mic.
+# rescan. If a mic you expect is missing in the picker, use F10 to rescan,
+# or start without other apps using the mic.
 DEDUPE_INPUTS = True
 PREFERRED_HOST_APIS = ("Windows WASAPI", "WDM-KS", "MME", "Windows DirectSound")
-INPUT_ALLOWLIST = [
-    "Microphone (NexiGo HelloCam N930W Audio)",
-    "Headset Microphone (CORSAIR VOID ELITE Wireless Gaming Headset)",
-    "Microphone (Steam Streaming Microphone)",
-]
 
 # Whole-UI color themes, one per chat. $primary/$accent/$success/etc. drive
 # EVERY color on screen (borders, titles, meter, talk state, status bar,
@@ -217,19 +205,15 @@ def _dedupe(raw):
     return [(i, d["name"]) for i, d, _a in items]
 
 
-def list_inputs(dedupe=None, allowlist=None):
+def list_inputs(dedupe=None):
     """Return [(index, name), ...] for usable inputs.
 
     dedupe=True (default): collapse duplicate clones of the same physical mic,
-    keeping the best (preferred host-API) index. Off if an allowlist is given,
-    because the allowlist names already point at specific intended devices.
-    allowlist=: optional list of normalized names; only entries whose
-    norm(name) is in the allowlist are returned.
+    keeping the best (preferred host-API) index.
+    dedupe=False: show every index (no filtering at all).
     """
     if dedupe is None:
         dedupe = DEDUPE_INPUTS
-    if allowlist is None:
-        allowlist = INPUT_ALLOWLIST
     devices = sd.query_devices()
     hostapis = sd.query_hostapis()
     raw = [
@@ -237,17 +221,6 @@ def list_inputs(dedupe=None, allowlist=None):
         for i, d in enumerate(devices)
         if d.get("max_input_channels", 0) > 0
     ]
-    if allowlist:
-        wanted = {a.casefold() for a in allowlist}
-        kept = {}
-        for i, d, api in raw:
-            key = _norm_device_name(d["name"]).casefold()
-            if key not in wanted:
-                continue
-            if key not in kept or api_rank(api) < api_rank(kept[key][2]):
-                kept[key] = (i, d, api)
-        raw = [kept[w] for w in sorted(wanted) if w in kept]
-        return [(i, d["name"]) for i, d, _a in raw]
     if not dedupe:
         return [(i, d["name"]) for i, d, _a in raw]
     return _dedupe(raw)
@@ -1022,7 +995,7 @@ class WardogsApp(App):
         self._open_picker("SWITCH INPUT DEVICE")
 
     def action_rescan(self) -> None:
-        """Re-enumerate devices (applies dedupe + allowlist defaults)."""
+        """Re-enumerate devices (applies dedupe defaults)."""
         global device_index
         self.inputs = list_inputs()
         if device_index not in [i for i, _n in self.inputs]:
@@ -1072,6 +1045,10 @@ class WardogsApp(App):
             self.monitor.start()
             self.status_kind = "ok"
             self.status_text = f"Device: [{index}] {device_name}"
+            self.query_one("#device-name", Static).update(device_name)
+            self.query_one("#enabled", Static).update(
+                f"[{device_index}]  {"ENABLED" if _enabled else "DISABLED"}"
+            )
         except Exception as exc:
             self.status_kind = "err"
             self.status_text = f"Device switch failed: {exc}"
@@ -1248,7 +1225,7 @@ def list_devices_color(no_color):
         print(f"  Could not enumerate devices: {exc}")
     print()
 
-    # Show what the dedupe/allowlist would actually offer in the picker.
+    # Show what dedupe would actually offer in the picker.
     print(f"{_B}{_C}Picker will offer{_R} ({len(list_inputs())} input(s)):")
     for idx, name in list_inputs():
         print(f"  {_G}[{idx:2}]{_R} {name}")
