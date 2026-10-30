@@ -5,7 +5,7 @@ whenever audio rises above a threshold. Terminal UI built with Textual.
 
 Controls
 --------
-  F1 / F11 : switch chat  squad <-> local  (the whole UI re-colors)
+  ` / F11 : switch chat  squad <-> local  (the whole UI re-colors)
   F2       : mute / unmute
   F3 / F9  : pick input device
   F8/Space : toggle PTT on/off
@@ -44,7 +44,7 @@ INPUT_DEVICE = None
 VOICEMOD_NAME_HINT = "voicemod"
 
 # Chat keys in WarDogs: hold the squad key to talk on squad, hold the local
-# key to talk on local. Starts on squad; F1/F11 switches any time.
+# key to talk on local. Starts on squad; `/F11 switches any time.
 SQUAD_KEY = "j"
 LOCAL_KEY = "k"
 START_CHAT = "squad"          # "squad" (team-color UI) or "local" (orange UI)
@@ -88,7 +88,7 @@ PREFERRED_HOST_APIS = ("Windows WASAPI", "WDM-KS", "MME", "Windows DirectSound")
 
 # Whole-UI color themes, one per chat. $primary/$accent/$success/etc. drive
 # EVERY color on screen (borders, titles, meter, talk state, status bar,
-# scope...) so the whole UI changes with the chat (F1).
+# scope...) so the whole UI changes with the chat (`).
 #
 # Squad = YOUR team color (there's a lot of rivalry!): pick red, green or blue
 # below.  Local = orange, always.
@@ -403,7 +403,7 @@ def queue_command(name):
 def on_key_press(key):
     if menu_active.is_set():
         return
-    if key == keyboard.Key.f1:
+    if key == keyboard.KeyCode(char="`"):
         queue_command("chat")
     elif key == keyboard.Key.f2:
         queue_command("mute")
@@ -672,7 +672,7 @@ Screen {
     border: round $accent;
 }
 
-/* ---------- chat-theme color classes (F1 switches the whole UI) ---------- */
+/* ---------- chat-theme color classes (` switches the whole UI) ---------- */
 
 #chat-title, #device-title, #level-title {
     color: $accent;
@@ -785,7 +785,7 @@ class WardogsApp(App):
     CSS = APP_CSS
 
     BINDINGS = [
-        Binding("f1", "chat", "Chat: squad/local"),
+        Binding("`", "chat", "Chat: squad/local"),
         Binding("f2", "mute", "Mute"),
         Binding("f3", "devices", "Input device"),
         Binding("f8,space", "toggle", "PTT on/off"),
@@ -923,7 +923,7 @@ class WardogsApp(App):
         except Exception:
             pass
 
-    # ---- commands from the global keyboard hook (F1/F2/F3/F8-F12) ----
+    # ---- commands from the global keyboard hook (`/F2/F3/F8-F12) ----
 
     def _drain_commands(self) -> None:
         while True:

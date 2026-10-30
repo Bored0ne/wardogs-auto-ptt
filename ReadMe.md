@@ -9,7 +9,7 @@ speak - no push-to-talk key required.
 
 ## Features
 
-- **Squad vs Local chat** - switch with **F1** (or F11). The **entire UI**
+- **Squad vs Local chat** - switch with **`** (or F11). The **entire UI**
   re-colors when you switch, so you always know which chat you are on at a glance:
   - **Local** is always **orange**.
   - **Squad** uses your team color - pick **red**, **green** or **blue**
@@ -94,7 +94,7 @@ A release asset `wardogs-auto-ptt-windows.zip` is attached to the tag/release.
 
 | Key | Action |
 | --- | --- |
-| F1 / F11 | switch chat squad <-> local (whole UI re-colors) |
+| ` / F11 | switch chat squad <-> local (whole UI re-colors) |
 | F2 | mute / unmute |
 | F3 / F9 | pick input device |
 | F8 / Space | toggle PTT on/off |
